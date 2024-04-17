@@ -1,7 +1,12 @@
 package io.github.flaxoos
 
+import io.github.flaxoos.ktor.server.plugins.kafka.Kafka
+import io.github.flaxoos.ktor.server.plugins.kafka.installKafka
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted
+import io.ktor.server.application.createApplicationPlugin
+import io.ktor.server.application.hooks.MonitoringEvent
+import io.ktor.server.application.install
 import io.ktor.server.application.log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -17,7 +22,7 @@ fun Application.module() {
     produceEvents(frequency)
 
     fun question1() {
-        // TODO: can we do the above with a plugin?
+        // TODO: Quick plugin development intro, Let's do the above with a plugin
     }
 
     fun question2() {

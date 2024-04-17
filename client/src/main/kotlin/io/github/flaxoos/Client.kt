@@ -20,9 +20,11 @@ fun main() {
     runBlocking {
         List(CLIENTS_COUNT) {
             val logger = LoggerFactory.getLogger("Client: $it")
+
             val scope = CoroutineScope(Dispatchers.IO)
             val client =
                 HttpClient(CIO)
+
             scope.launch {
                 while (isActive) {
                     logger.info("Getting events")
