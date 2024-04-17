@@ -21,53 +21,57 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 fun Application.module() {
-    //    produceEvents()
+    val frequency = 1.seconds
+    produceEvents(frequency)
+    //TODO: can we do this with a plugin?
 
     // TODO: how do we manage the tasks across multiple instances?
-    configureTasks()
-
     // TODO: how do we setup kafka to produce events?
-    configureKafka()
 }
 
-fun Application.produceEvents() {
+fun Application.produceEvents(frequency: Duration = 1.seconds) {
     environment.monitor.subscribe(ApplicationStarted) { app ->
         app.log.info("Event Producer Started")
 
         CoroutineScope(app.coroutineContext).launch {
             while (app.isActive) {
                 app.sendEvent()
-                delay(1000)
+                delay(frequency)
             }
         }
     }
 }
 
 val produceEventsPlugin =
-    createApplicationPlugin("produceEvents") {
+    createApplicationPlugin("produceEvents", ::ProduceEventsConfig) {
         on(MonitoringEvent(ApplicationStarted)) { app ->
             app.log.info("Event Producer Started")
 
             CoroutineScope(app.coroutineContext).launch {
                 while (app.isActive) {
                     app.sendEvent()
-                    delay(1000)
+                    delay(pluginConfig.frequency)
                 }
             }
         }
     }
+
+class ProduceEventsConfig {
+    var frequency: Duration = 1.seconds
+}
 
 fun Application.sendEvent() {
     val id = environment.config.property("ktor.application.id").getString()
     val event = MyEvent(message = "Hello from producer $id")
     log.info("Sending event: ${event.message}")
 
-    // TODO: how do we send the event with kafka?
-    sendKafkaEvent(event)
+    // TODO: how do we send the event to kafka?
 }
 
 // --------------------------------------------------------------------
