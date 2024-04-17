@@ -38,7 +38,6 @@ fun main() {
                     logger.info("Getting events")
                     runCatching {
                         val response =
-                            // TODO: how do we prevent repeating requests when the server is failing?
                             client.requestWithCircuitBreaker(strict) {
                                 method = Get
                                 url("http://localhost:$CONSUMER_PORT/event")
@@ -53,8 +52,6 @@ fun main() {
         }.joinAll()
     }
 }
-
-// --------------------------------------
 
 private fun HttpClientConfig<CIOEngineConfig>.setupCircuitBreaking() {
     install(CircuitBreaking) {

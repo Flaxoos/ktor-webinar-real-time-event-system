@@ -21,19 +21,18 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 fun Application.module() {
-    //    produceEvents()
 
-    // TODO: how do we manage the tasks across multiple instances?
     configureTasks()
 
-    // TODO: how do we setup kafka to produce events?
     configureKafka()
 }
 
+// Without kafka, we'll produce events like this
 fun Application.produceEvents() {
     environment.monitor.subscribe(ApplicationStarted) { app ->
         app.log.info("Event Producer Started")
@@ -47,30 +46,32 @@ fun Application.produceEvents() {
     }
 }
 
+// Or, we can easily write a plugin that does it, allowing for more reusability and flexibility
 val produceEventsPlugin =
-    createApplicationPlugin("produceEvents") {
+    createApplicationPlugin("produceEvents", ::ProduceEventsConfig) {
         on(MonitoringEvent(ApplicationStarted)) { app ->
             app.log.info("Event Producer Started")
 
             CoroutineScope(app.coroutineContext).launch {
                 while (app.isActive) {
                     app.sendEvent()
-                    delay(1000)
+                    delay(pluginConfig.frequency)
                 }
             }
         }
     }
+
+class ProduceEventsConfig {
+    var frequency = 1.seconds
+}
 
 fun Application.sendEvent() {
     val id = environment.config.property("ktor.application.id").getString()
     val event = MyEvent(message = "Hello from producer $id")
     log.info("Sending event: ${event.message}")
 
-    // TODO: how do we send the event with kafka?
     sendKafkaEvent(event)
 }
-
-// --------------------------------------------------------------------
 
 fun Application.configureKafka() {
     installKafka {

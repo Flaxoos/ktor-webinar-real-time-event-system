@@ -37,13 +37,11 @@ fun Application.module() {
     configureRouting()
     configureSerialization()
 
-    // TODO: how do we setup kafka to consume events?
     configureKafka()
 }
 
 fun Application.configureRouting() {
     routing {
-        // TODO: how do we manage load on this route?
         configureRateLimiting()
         get("event") {
             eventStore.lastOrNull()?.let { call.respond(it) } ?: call.respond(NotFound)
@@ -63,8 +61,6 @@ fun Application.onEvent(event: MyEvent) {
 }
 
 val eventStore = ConcurrentSet<MyEvent>()
-
-// --------------------------------------------------------------------
 
 fun Application.configureKafka() {
     install(RateLimiting)
