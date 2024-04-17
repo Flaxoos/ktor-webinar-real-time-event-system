@@ -1,0 +1,8 @@
+ktor:
+  deployment:
+    port: "$PORT:8082"
+    host: "0.0.0.0"
+
+  application:
+    modules: [io.github.flaxoos.ProducerKt.module]
+    id: "$ID:1"

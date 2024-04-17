@@ -15,8 +15,6 @@ import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.server.application.install
 import io.ktor.server.application.log
-import io.ktor.server.cio.CIO
-import io.ktor.server.engine.embeddedServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -24,22 +22,32 @@ import kotlinx.coroutines.launch
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.concurrent.TimeUnit
 
-fun main() {
-    embeddedServer(
-        CIO,
-        port = CONSUMER_PORT,
-        module = Application::module,
-    ).start(wait = true)
-}
+fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 fun Application.module() {
-    install(produceEvents)
+    //    produceEvents()
 
+    // TODO: how do we manage the tasks across multiple instances?
     configureTasks()
+
+    // TODO: how do we setup kafka to produce events?
     configureKafka()
 }
 
-val produceEvents =
+fun Application.produceEvents() {
+    environment.monitor.subscribe(ApplicationStarted) { app ->
+        app.log.info("Event Producer Started")
+
+        CoroutineScope(app.coroutineContext).launch {
+            while (app.isActive) {
+                app.sendEvent()
+                delay(1000)
+            }
+        }
+    }
+}
+
+val produceEventsPlugin =
     createApplicationPlugin("produceEvents") {
         on(MonitoringEvent(ApplicationStarted)) { app ->
             app.log.info("Event Producer Started")
@@ -54,16 +62,19 @@ val produceEvents =
     }
 
 fun Application.sendEvent() {
-    val event = MyEvent()
-    log.info("Sending event: $event")
-    senKafkaEvent(event)
+    val id = environment.config.property("ktor.application.id").getString()
+    val event = MyEvent(message = "Hello from producer $id")
+    log.info("Sending event: ${event.message}")
+
+    // TODO: how do we send the event with kafka?
+    sendKafkaEvent(event)
 }
 
 // --------------------------------------------------------------------
 
 fun Application.configureKafka() {
     installKafka {
-        val events = TopicName.named("events")
+        val events = TopicName.named(TOPIC_NAME)
         schemaRegistryUrl = SCHEMA_REGISTRY_URL
         topic(events) {
             partitions = 1
@@ -72,7 +83,7 @@ fun Application.configureKafka() {
         producer {
             bootstrapServers = BOOTSTRAP_SERVERS
             retries = 1
-            clientId = "event-producer"
+            clientId = "producer"
         }
         registerSchemas {
             MyEvent::class at events
@@ -105,6 +116,7 @@ fun Application.configureTasks() {
     }
 }
 
-fun Application.senKafkaEvent(event: MyEvent) {
-    this.kafkaProducer?.send(ProducerRecord("events", event.timestamp.toString(), event.toRecord()))?.get(100, TimeUnit.MILLISECONDS)
+fun Application.sendKafkaEvent(event: MyEvent) {
+    this.kafkaProducer?.send(ProducerRecord("events", event.time.toString(), event.toRecord()))
+        ?.get(100, TimeUnit.MILLISECONDS)
 }

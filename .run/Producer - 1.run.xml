@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Producer - 1" type="JetRunConfigurationType" singleton="false">
+    <envs>
+      <env name="PORT" value="8082" />
+      <env name="ID" value="1" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="io.github.flaxoos.ProducerKt" />
+    <module name="ktor-real-time-event-system.producer.main" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

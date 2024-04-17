@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run System" type="CompoundRunConfigurationType">
+    <toRun name="docker-compose.yaml: Compose Deployment" type="docker-deploy" />
+    <toRun name="Client" type="JetRunConfigurationType" />
+    <toRun name="Consumer" type="JetRunConfigurationType" />
+    <toRun name="Producer - 1" type="JetRunConfigurationType" />
+    <toRun name="Producer - 2" type="JetRunConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

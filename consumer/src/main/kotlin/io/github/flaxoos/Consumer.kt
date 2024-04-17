@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.seconds
 fun main() {
     embeddedServer(
         CIO,
-        port = PROCESSOR_PORT,
+        port = CONSUMER_PORT,
         host = "0.0.0.0",
         module = Application::module,
     ).start(wait = true)
@@ -37,11 +37,13 @@ fun Application.module() {
     configureRouting()
     configureSerialization()
 
+    // TODO: how do we setup kafka to consume events?
     configureKafka()
 }
 
 fun Application.configureRouting() {
     routing {
+        // TODO: how do we manage load on this route?
         configureRateLimiting()
         get("event") {
             eventStore.lastOrNull()?.let { call.respond(it) } ?: call.respond(NotFound)
@@ -55,29 +57,28 @@ fun Application.configureSerialization() {
     }
 }
 
-// --------------------------------------------------------------------
-
 fun Application.onEvent(event: MyEvent) {
     eventStore.add(event)
-    log.info("Received event: $event")
+    log.info("Received event: ${event.message}")
 }
 
 val eventStore = ConcurrentSet<MyEvent>()
 
+// --------------------------------------------------------------------
+
 fun Application.configureKafka() {
     install(RateLimiting)
     installKafka {
-        val events = TopicName.named("events")
+        val events = TopicName.named(TOPIC_NAME)
         schemaRegistryUrl = SCHEMA_REGISTRY_URL
         consumer {
             bootstrapServers = BOOTSTRAP_SERVERS
-            groupId = "event-processor-group"
-            clientId = "event-processor"
+            groupId = "consumer-group"
+            clientId = "consumer"
         }
 
         consumerConfig {
             consumerRecordHandler(events) { record ->
-                log.info("Received event: ${record.value()}")
                 val event = fromRecord<MyEvent>(record.value())
                 onEvent(event)
             }

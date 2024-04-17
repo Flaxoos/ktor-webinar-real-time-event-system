@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     kotlin("jvm") version libs.versions.kotlin.get() apply false
     id("io.ktor.plugin") version libs.versions.ktor.get()
@@ -7,11 +9,15 @@ plugins {
 allprojects {
     repositories {
         mavenCentral()
-
+        mavenLocal()
         maven {
             url = uri("https://maven.pkg.github.com/flaxoos/flax-gradle-plugins")
         }
     }
+}
+
+tasks.withType<ShadowJar> {
+    enabled = false
 }
 
 val ktorServerCore = libs.ktor.server.core.jvm.get()
@@ -42,5 +48,13 @@ subprojects {
         testImplementation(ktorServerTestHost)
         testImplementation(ktorServerTests)
         testImplementation(kotlinTestJunit)
+    }
+
+    sourceSets {
+        main {
+            resources {
+                srcDirs("$rootDir/logging")
+            }
+        }
     }
 }
